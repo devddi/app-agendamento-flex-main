@@ -166,7 +166,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                   <div className="space-y-1">
                     <CardTitle className="flex items-center gap-2">
                       <CalendarIcon className="w-5 h-5 text-primary" />
-                      {format(new Date(agendamento.data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      {format(new Date(agendamento.data + 'T00:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                     </CardTitle>
                     <CardDescription className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />

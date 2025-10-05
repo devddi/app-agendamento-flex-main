@@ -87,7 +87,7 @@ const ClientesManager = ({ empresaId }: ClientesManagerProps) => {
                   {cliente.data_nascimento && (
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
-                      {format(new Date(cliente.data_nascimento), "dd/MM/yyyy")}
+                      {format(new Date(cliente.data_nascimento + 'T00:00:00'), "dd/MM/yyyy")}
                     </div>
                   )}
                 </CardDescription>

@@ -39,6 +39,9 @@ const AdminMaster = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -47,6 +50,30 @@ const AdminMaster = () => {
     telefone: "",
     password: "",
   });
+
+  const [editFormData, setEditFormData] = useState({
+    nome: "",
+    responsavel: "",
+    email: "",
+    telefone: "",
+    status: "ativo",
+  });
+
+  const formatTelefone = (value: string) => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica a máscara (XX) X XXXX-XXXX
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 3) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3)}`;
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
 
   useEffect(() => {
     if (!authLoading) {
@@ -78,30 +105,95 @@ const AdminMaster = () => {
     }
   };
 
-  const criarHorariosIniciais = async (empresaId: string) => {
-    const diasSemana = [1, 2, 3, 4, 5, 6, 0]; // Segunda a Domingo (1-6, 0=domingo)
-    const horariosParaInserir = [];
 
-    // Criar todos os horários de 6:00 às 22:30 com intervalos de 30 minutos
-    for (const dia of diasSemana) {
-      for (let hora = 6; hora <= 22; hora++) {
-        for (let minuto = 0; minuto < 60; minuto += 30) {
-          const horarioFormatado = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
-          horariosParaInserir.push({
-            empresa_id: empresaId,
-            dia_semana: dia,
-            horario: horarioFormatado,
-            ativo: false // Todos começam como FALSE
-          });
-        }
-      }
+
+  const handleEditEmpresa = (empresa: Empresa) => {
+    setSelectedEmpresa(empresa);
+    setEditFormData({
+      nome: empresa.nome,
+      responsavel: empresa.responsavel,
+      email: empresa.email,
+      telefone: empresa.telefone,
+      status: empresa.status,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateEmpresa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEmpresa) return;
+    
+    setEditSubmitting(true);
+    
+    try {
+      const updateData = {
+        nome: editFormData.nome,
+        responsavel: editFormData.responsavel,
+        email: editFormData.email,
+        telefone: editFormData.telefone,
+        status: editFormData.status,
+      };
+
+      const { error } = await supabase
+        .from('empresas')
+        .update(updateData)
+        .eq('id', selectedEmpresa.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Empresa atualizada!",
+        description: `${editFormData.nome} foi atualizada com sucesso.`,
+      });
+
+      setEditDialogOpen(false);
+      setSelectedEmpresa(null);
+      fetchEmpresas();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar empresa",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteEmpresa = async () => {
+    if (!selectedEmpresa) return;
+    
+    if (!confirm(`Tem certeza que deseja deletar a empresa "${selectedEmpresa.nome}"? Esta ação não pode ser desfeita.`)) {
+      return;
     }
 
-    const { error } = await supabase
-      .from('horarios_funcionamento')
-      .insert(horariosParaInserir);
+    setEditSubmitting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('empresas')
+        .delete()
+        .eq('id', selectedEmpresa.id);
 
-    if (error) throw error;
+      if (error) throw error;
+
+      toast({
+        title: "Empresa deletada!",
+        description: `${selectedEmpresa.nome} foi deletada com sucesso.`,
+      });
+
+      setEditDialogOpen(false);
+      setSelectedEmpresa(null);
+      fetchEmpresas();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao deletar empresa",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setEditSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,9 +242,6 @@ const AdminMaster = () => {
         });
 
       if (roleError) throw roleError;
-
-      // 4. Criar horários iniciais com status FALSE
-      await criarHorariosIniciais(empresa.id);
 
       toast({
         title: "Empresa cadastrada!",
@@ -256,10 +345,14 @@ const AdminMaster = () => {
                 <Input
                   id="telefone"
                   value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                  placeholder="(00) 00000-0000"
+                  onChange={(e) => {
+                    const formatted = formatTelefone(e.target.value);
+                    setFormData({ ...formData, telefone: formatted });
+                  }}
+                  placeholder="(XX) X XXXX-XXXX"
                   required
                   className="glass"
+                  maxLength={16}
                 />
               </div>
               <div className="space-y-2">
@@ -292,7 +385,11 @@ const AdminMaster = () => {
         {/* Empresas List */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {empresas.map((empresa) => (
-            <Card key={empresa.id} className="glass border-primary/20 hover:border-primary/50 smooth-transition">
+            <Card 
+              key={empresa.id} 
+              className="glass border-primary/20 hover:border-primary/50 smooth-transition cursor-pointer"
+              onClick={() => handleEditEmpresa(empresa)}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className={`w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`}>
@@ -332,6 +429,108 @@ const AdminMaster = () => {
             </Card>
           ))}
         </div>
+
+        {/* Modal de Edição da Empresa */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="glass max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Empresa</DialogTitle>
+              <DialogDescription>
+                Edite as informações da empresa {selectedEmpresa?.nome}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateEmpresa} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nome">Nome da Empresa</Label>
+                <Input
+                  id="edit-nome"
+                  value={editFormData.nome}
+                  onChange={(e) => setEditFormData({ ...editFormData, nome: e.target.value })}
+                  placeholder="Ex: Tiara Lima Nails"
+                  required
+                  className="glass"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-responsavel">Nome do Responsável</Label>
+                <Input
+                  id="edit-responsavel"
+                  value={editFormData.responsavel}
+                  onChange={(e) => setEditFormData({ ...editFormData, responsavel: e.target.value })}
+                  placeholder="Ex: Maria Silva"
+                  required
+                  className="glass"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">E-mail</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  placeholder="empresa@exemplo.com"
+                  required
+                  className="glass"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-telefone">Telefone</Label>
+                <Input
+                  id="edit-telefone"
+                  value={editFormData.telefone}
+                  onChange={(e) => {
+                    const formatted = formatTelefone(e.target.value);
+                    setEditFormData({ ...editFormData, telefone: formatted });
+                  }}
+                  placeholder="(XX) X XXXX-XXXX"
+                  required
+                  className="glass"
+                  maxLength={16}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <select
+                  id="edit-status"
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 glass"
+                  required
+                >
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" className="flex-1" disabled={editSubmitting}>
+                  {editSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Alterações'
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={handleDeleteEmpresa}
+                  disabled={editSubmitting}
+                  className="px-4"
+                >
+                  {editSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Deletar'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -49,14 +49,17 @@ const EmpresaLogin = () => {
         .eq('owner_id', data.user.id)
         .single();
 
-      if (empresa) {
-        navigate(`/empresa/${empresa.slug}/admin`);
-      }
-
       toast({
         title: "Login realizado!",
         description: "Bem-vindo ao painel da sua empresa.",
       });
+
+      // Navigate after a small delay to ensure auth state is updated
+      if (empresa) {
+        setTimeout(() => {
+          navigate(`/empresa/${empresa.slug}/admin`);
+        }, 100);
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",

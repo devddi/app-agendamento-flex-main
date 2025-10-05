@@ -37,16 +37,89 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
     nome: "",
     data_nascimento: "",
   });
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
 
-  const horarios = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-    "16:00", "16:30", "17:00", "17:30"
-  ];
+  const formatTelefone = (value: string) => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica a máscara (XX) X XXXX-XXXX
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 3) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3)}`;
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
+
+  // Buscar horários disponíveis da empresa para a data selecionada
+  const fetchHorariosDisponiveis = async (data: Date) => {
+    try {
+      const diaSemana = data.getDay();
+      const dataFormatada = format(data, 'yyyy-MM-dd');
+      
+      // Buscar horários de funcionamento
+      const responseHorarios = await (supabase as any)
+        .from('horarios_funcionamento')
+        .select('horario')
+        .eq('empresa_id', empresa.id)
+        .eq('dia_semana', diaSemana)
+        .eq('ativo', true)
+        .order('horario');
+      
+      if (responseHorarios.error) throw responseHorarios.error;
+      
+      // Buscar agendamentos já confirmados para esta data
+      const { data: agendamentos, error: agendamentosError } = await supabase
+        .from('agendamentos')
+        .select('hora')
+        .eq('empresa_id', empresa.id)
+        .eq('data', dataFormatada)
+        .eq('status', 'confirmado');
+      
+      if (agendamentosError) throw agendamentosError;
+      
+      // Converter horários ocupados para formato HH:MM
+      const horariosOcupados = agendamentos?.map(a => {
+        if (typeof a.hora === 'string') {
+          // Se já é string, garantir formato HH:MM
+          return a.hora.slice(0, 5);
+        }
+        return a.hora;
+      }) || [];
+      
+      const horariosFormatados = (responseHorarios.data as any[])?.map((h: any) => 
+        typeof h.horario === 'string' ? h.horario.slice(0, 5) : h.horario
+      ) || [];
+      
+      // Filtrar horários que não estão ocupados
+      const horariosLivres = horariosFormatados.filter(horario => 
+        !horariosOcupados.includes(horario)
+      );
+      
+      setHorariosDisponiveis(horariosLivres);
+    } catch (error: any) {
+      console.error('Erro ao buscar horários:', error);
+      setHorariosDisponiveis([]);
+    }
+  };
 
   const handleSelectTime = async (hora: string) => {
     setSelectedTime(hora);
     setStep('phone');
+  };
+
+  // Buscar horários quando uma data for selecionada
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      fetchHorariosDisponiveis(date);
+    } else {
+      setHorariosDisponiveis([]);
+    }
   };
 
   const handleCheckTelefone = async () => {
@@ -119,11 +192,14 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
           cliente_id: clienteId,
           servico_id: servico.id,
           data: format(selectedDate, 'yyyy-MM-dd'),
-          hora: selectedTime,
+          hora: selectedTime + ':00', // Garantir formato TIME (HH:MM:SS)
           status: 'confirmado',
         });
 
       if (agendamentoError) throw agendamentoError;
+
+      // Atualizar lista de horários disponíveis após confirmar
+      await fetchHorariosDisponiveis(selectedDate);
 
       toast({
         title: "🎉 Agendamento confirmado!",
@@ -166,32 +242,40 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
           {step === 'calendar' && (
             <>
               <div className="space-y-4">
-                <h3 className="font-semibold">Escolha a data</h3>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  disabled={(date) => date < new Date() || date.getDay() === 0}
-                  locale={ptBR}
-                  className="rounded-2xl glass border-primary/20 p-4"
-                />
+                <h3 className="font-semibold text-center">Escolha a data</h3>
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    disabled={(date) => date < new Date()}
+                    locale={ptBR}
+                    className="rounded-2xl glass border-primary/20 p-4"
+                  />
+                </div>
               </div>
               
               {selectedDate && (
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Escolha o horário</h3>
-                  <div className="grid grid-cols-4 gap-2">
-                    {horarios.map((hora) => (
-                      <Button
-                        key={hora}
-                        variant="outline"
-                        className="glass"
-                        onClick={() => handleSelectTime(hora)}
-                      >
-                        {hora}
-                      </Button>
-                    ))}
-                  </div>
+                  <h3 className="font-semibold text-center">Escolha o horário</h3>
+                  {horariosDisponiveis.length === 0 ? (
+                    <div className="text-center p-6 text-muted-foreground">
+                      <p>Nenhum horário disponível para esta data</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2">
+                      {horariosDisponiveis.map((hora) => (
+                        <Button
+                          key={hora}
+                          variant="outline"
+                          className="glass"
+                          onClick={() => handleSelectTime(hora)}
+                        >
+                          {hora}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -204,9 +288,13 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
                 <Input
                   id="telefone"
                   value={telefone}
-                  onChange={(e) => setTelefone(e.target.value)}
-                  placeholder="(00) 00000-0000"
+                  onChange={(e) => {
+                    const formatted = formatTelefone(e.target.value);
+                    setTelefone(formatted);
+                  }}
+                  placeholder="(XX) X XXXX-XXXX"
                   className="glass"
+                  maxLength={16}
                 />
               </div>
               <Button onClick={handleCheckTelefone} className="w-full" disabled={loading}>

@@ -12,31 +12,28 @@ const Index = () => {
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass backdrop-blur-md border-b border-primary/10">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <Calendar className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+          <div className="flex items-center">
+            <div className="h-8 sm:h-10">
+              <img src="https://gcblvcvokubxlhlaikvq.supabase.co/storage/v1/object/public/utils/logo.png" alt="AgendaTOP Logo" className="h-full w-auto object-contain" />
             </div>
-            <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              AgendaTOP
-            </span>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
             <Button 
-              variant="outline" 
               size="sm" 
-              onClick={() => navigate('/admin-master/login')} 
-              className="glass backdrop-blur-sm hover:bg-primary/10 transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 hidden sm:inline-flex"
+              onClick={() => navigate('/empresa/login')} 
+              className="group hidden sm:inline-flex"
             >
-              Acesso Administrativo
+              Já tenho conta
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
-              variant="outline" 
               size="sm" 
-              onClick={() => navigate('/admin-master/login')} 
-              className="glass backdrop-blur-sm hover:bg-primary/10 transition-all duration-300 sm:hidden px-2"
+              onClick={() => navigate('/empresa/login')} 
+              className="group sm:hidden"
             >
-              Admin
+              Login
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
         </div>
@@ -49,28 +46,9 @@ const Index = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-primary/15 via-primary/8 to-transparent blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] rounded-full bg-gradient-to-r from-transparent via-primary/5 to-transparent blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
         
-        {/* Moving glow lines */}
-        <div className="absolute inset-0" aria-hidden="true">
-          <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-[pulse_4s_ease-in-out_infinite]" />
-          <div className="absolute top-2/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-[pulse_6s_ease-in-out_infinite]" />
-          <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent animate-[pulse_8s_ease-in-out_infinite]" />
-        </div>
 
-        {/* Floating particles */}
-        <div className="absolute inset-0">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-primary/20 rounded-full animate-bounce"
-              style={{
-                left: `${20 + i * 15}%`,
-                top: `${30 + (i % 3) * 20}%`,
-                animationDelay: `${i * 0.5}s`,
-                animationDuration: `${3 + i * 0.5}s`
-              }}
-            />
-          ))}
-        </div>
+
+
       </div>
 
       <main className="relative z-10">
@@ -117,51 +95,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Quick Actions */}
-        <section className="px-4 pb-16">
-          <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
-            {(!user || isAdmin) && (
-              <div className="glass glass-hover rounded-3xl p-8 space-y-6 scale-in border border-primary/10 hover:border-primary/30 transition-all duration-500">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center neon-border">
-                  <Building2 className="w-10 h-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold">Acesso Administrativo</h3>
-                <p className="text-muted-foreground">Entre no painel administrativo da sua empresa e gerencie tudo com facilidade</p>
-                <Button className="w-full group" size="lg" onClick={() => navigate('/empresa/login')}>
-                  Fazer Login
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
-            )}
 
-            {isEmpresaOwner && (
-              <div className="glass glass-hover rounded-3xl p-8 space-y-6 scale-in border border-primary/10 hover:border-primary/30 transition-all duration-500" style={{ animationDelay: '0.1s' }}>
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center neon-border">
-                  <Calendar className="w-10 h-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold">Minha Empresa</h3>
-                <p className="text-muted-foreground">Acesse o painel da sua empresa e gerencie agendamentos em tempo real</p>
-                <Button className="w-full group" variant="secondary" size="lg" onClick={() => navigate('/empresa/login')}>
-                  Acessar Painel
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
-            )}
-
-            {!user && (
-              <div className="glass glass-hover rounded-3xl p-8 space-y-6 scale-in border border-primary/10 hover:border-primary/30 transition-all duration-500" style={{ animationDelay: '0.2s' }}>
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center neon-border">
-                  <Calendar className="w-10 h-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold">Fazer Agendamento</h3>
-                <p className="text-muted-foreground">Acesse o link público da empresa para realizar seu agendamento rapidamente</p>
-                <p className="text-sm text-primary font-mono bg-primary/10 px-3 py-2 rounded-lg">
-                  /empresa/[nome-da-empresa]
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
 
         {/* Features Section */}
         <section className="px-4 pb-20">
@@ -298,7 +232,7 @@ const Index = () => {
                 <div className="text-center mb-8 md:mb-10">
                   <h3 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">Pro</h3>
                   <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6">Solução completa para sua empresa</p>
-                  <div className="text-4xl md:text-5xl font-bold text-primary">R$ 29<span className="text-lg md:text-xl text-muted-foreground">/mês</span></div>
+                  <div className="text-4xl md:text-5xl font-bold text-primary">R$ 59<span className="text-lg md:text-xl text-muted-foreground">/mês</span></div>
                 </div>
                 <ul className="space-y-3 md:space-y-4 mb-8 md:mb-10">
                   <li className="flex items-center gap-2 md:gap-3">

@@ -38,7 +38,11 @@ const AdminMasterLogin = () => {
       }
 
       toast({ title: 'Login realizado!', description: 'Bem-vindo ao painel Admin Master.' });
-      navigate('/admin-master');
+      
+      // Navigate after a small delay to ensure auth state is updated
+      setTimeout(() => {
+        navigate('/admin-master');
+      }, 100);
     } catch (err: any) {
       toast({ title: 'Erro ao fazer login', description: err.message, variant: 'destructive' });
     } finally {

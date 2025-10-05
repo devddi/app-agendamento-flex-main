@@ -114,11 +114,6 @@ const EmpresaPublica = () => {
           <p className="text-muted-foreground text-lg">
             Escolha um serviço e agende seu horário
           </p>
-          <div className="flex items-center justify-center gap-4 mt-4 text-sm text-muted-foreground">
-            <span>{empresa.telefone}</span>
-            <span>•</span>
-            <span>{empresa.email}</span>
-          </div>
         </div>
 
         {/* Catálogo de Serviços */}

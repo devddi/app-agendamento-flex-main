@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Building2 } from "lucide-react";
-import HorariosFuncionamento from "./HorariosFuncionamento";
+
 
 interface EmpresaSettingsProps {
   empresa: {
@@ -28,10 +28,27 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
     responsavel: empresa.responsavel,
     email: empresa.email,
     telefone: empresa.telefone,
+    password: "",
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(empresa.logo_url || null);
+
+  const formatTelefone = (value: string) => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica a máscara (XX) X XXXX-XXXX
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 3) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3)}`;
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -67,7 +84,10 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
       }
 
       const updatePayload = { 
-        ...formData, 
+        nome: formData.nome,
+        responsavel: formData.responsavel,
+        email: formData.email,
+        telefone: formData.telefone,
         logo_url: logoUrlToSave
       };
       const { error } = await supabase
@@ -76,6 +96,17 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
         .eq('id', empresa.id);
 
       if (error) throw error;
+
+      // Atualizar senha se fornecida
+      if (formData.password.trim()) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: formData.password
+        });
+        
+        if (passwordError) {
+          throw new Error(`Erro ao atualizar senha: ${passwordError.message}`);
+        }
+      }
 
       toast({
         title: "Dados atualizados!",
@@ -144,20 +175,38 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
                 <Input
                   id="telefone"
                   value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                  onChange={(e) => {
+                    const formatted = formatTelefone(e.target.value);
+                    setFormData({ ...formData, telefone: formatted });
+                  }}
                   className="glass"
                   required
+                  maxLength={16}
+                  placeholder="(XX) X XXXX-XXXX"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Nova Senha (opcional)</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="glass"
+                placeholder="Deixe em branco para manter a senha atual"
+              />
+              <p className="text-xs text-muted-foreground">Preencha apenas se desejar alterar sua senha de acesso.</p>
             </div>
 
             {/* Logo Upload */}
             <div className="space-y-2">
               <Label htmlFor="logo">Logo da Empresa</Label>
               <div className="flex items-center gap-4">
-                <div className={`w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center ${logoPreview ? '' : 'border-2 border-primary/30'}`}>
+                <div className={`w-20 h-20 min-w-20 min-h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0 ${logoPreview ? '' : 'border-2 border-primary/30'}`}>
                   {logoPreview ? (
-                    <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                    <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover object-center" style={{aspectRatio: '1/1'}} />
                   ) : (
                     <Building2 className="w-8 h-8 text-primary" />
                   )}
@@ -190,8 +239,7 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
         </CardContent>
       </Card>
 
-      {/* Componente separado para horários de funcionamento */}
-      <HorariosFuncionamento empresaId={empresa.id} />
+
     </div>
   );
 };
