@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Dark Mode - Base Colors */
+    --background: 220 26% 6%;
+    --foreground: 210 40% 98%;
+
+    /* Glass Cards */
+    --card: 220 26% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 26% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Neon Green Accent */
+    --primary: 155 89% 58%;
+    --primary-foreground: 220 26% 6%;
+    --primary-glow: 155 89% 68%;
+
+    /* Secondary Elements */
+    --secondary: 220 26% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 220 26% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 155 89% 58%;
+    --accent-foreground: 220 26% 6%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Glass Borders */
+    --border: 220 26% 20%;
+    --input: 220 26% 20%;
+    --ring: 155 89% 58%;
+
+    --radius: 1rem;
+
+    /* Sidebar */
+    --sidebar-background: 220 26% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 155 89% 58%;
+    --sidebar-primary-foreground: 220 26% 6%;
+    --sidebar-accent: 220 26% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 26% 20%;
+    --sidebar-ring: 155 89% 58%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(155 89% 58%), hsl(155 89% 68%));
+    --gradient-dark: linear-gradient(180deg, hsl(220 26% 6%), hsl(220 26% 10%));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    
+    /* Shadows with neon glow */
+    --shadow-glow: 0 0 20px hsl(155 89% 58% / 0.3);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(220 26% 6%) 0%, hsl(220 26% 10%) 100%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism utilities */
+  .glass {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10;
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-hover {
+    @apply transition-all duration-300 hover:bg-white/10 hover:border-primary/50;
+  }
+
+  .neon-border {
+    @apply border border-primary/50;
+    box-shadow: 0 0 15px hsl(155 89% 58% / 0.3);
+  }
+
+  .neon-text {
+    @apply text-primary;
+    text-shadow: 0 0 10px hsl(155 89% 58% / 0.5);
+  }
+
+  .smooth-transition {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Animation utilities */
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 5px hsl(155 89% 58% / 0.2), 0 0 10px hsl(155 89% 58% / 0.2);
+    }
+    to {
+      box-shadow: 0 0 10px hsl(155 89% 58% / 0.4), 0 0 20px hsl(155 89% 58% / 0.3);
+    }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}

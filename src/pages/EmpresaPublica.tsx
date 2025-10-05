@@ -1,0 +1,184 @@
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Building2, Loader2, Clock, DollarSign } from "lucide-react";
+import AgendamentoDialog from "@/components/public/AgendamentoDialog";
+
+interface Empresa {
+  id: string;
+  nome: string;
+  slug: string;
+  telefone: string;
+  email: string;
+  cor_secundaria: string | null;
+}
+
+interface Servico {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  duracao_minutos: number;
+  preco: number;
+}
+
+const EmpresaPublica = () => {
+  const { slug } = useParams();
+  const { toast } = useToast();
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
+
+  useEffect(() => {
+    fetchEmpresa();
+  }, [slug]);
+
+  const fetchEmpresa = async () => {
+    try {
+      const { data: empresaData, error: empresaError } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'ativo')
+        .single();
+
+      if (empresaError) throw empresaError;
+      setEmpresa(empresaData);
+
+      const { data: servicosData, error: servicosError } = await supabase
+        .from('servicos')
+        .select('*')
+        .eq('empresa_id', empresaData.id)
+        .eq('ativo', true)
+        .order('nome');
+
+      if (servicosError) throw servicosError;
+      setServicos(servicosData || []);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar dados",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!empresa) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="glass border-primary/20 max-w-md w-full">
+          <CardContent className="p-12 text-center">
+            <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">Empresa não encontrada</h2>
+            <p className="text-muted-foreground">
+              A empresa que você está procurando não existe ou está inativa.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-6">
+      {/* Animated background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+
+      <div className="relative z-10 max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="glass rounded-3xl p-8 text-center fade-in">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center neon-border mb-4">
+            <Building2 className="w-10 h-10 text-primary" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-2">{empresa.nome}</h1>
+          <p className="text-muted-foreground text-lg">
+            Escolha um serviço e agende seu horário
+          </p>
+          <div className="flex items-center justify-center gap-4 mt-4 text-sm text-muted-foreground">
+            <span>{empresa.telefone}</span>
+            <span>•</span>
+            <span>{empresa.email}</span>
+          </div>
+        </div>
+
+        {/* Catálogo de Serviços */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-center">Nossos Serviços</h2>
+          
+          {servicos.length === 0 ? (
+            <Card className="glass border-primary/20">
+              <CardContent className="p-12 text-center">
+                <p className="text-muted-foreground">
+                  Nenhum serviço disponível no momento
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {servicos.map((servico) => (
+                <Card 
+                  key={servico.id} 
+                  className="glass border-primary/20 hover:border-primary/50 smooth-transition scale-in cursor-pointer"
+                  onClick={() => setSelectedServico(servico)}
+                >
+                  <CardHeader>
+                    <CardTitle className="text-xl">{servico.nome}</CardTitle>
+                    <CardDescription className="min-h-[3rem]">
+                      {servico.descricao || 'Serviço profissional de qualidade'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span>{servico.duracao_minutos} minutos</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-primary" />
+                        <span className="text-2xl font-bold text-primary">
+                          {servico.preco.toFixed(2)}
+                        </span>
+                      </div>
+                      <Button size="sm" className="animate-glow">
+                        Agendar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Agendamento Dialog */}
+      {selectedServico && empresa && (
+        <AgendamentoDialog
+          servico={selectedServico}
+          empresa={empresa}
+          open={!!selectedServico}
+          onClose={() => setSelectedServico(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default EmpresaPublica;
