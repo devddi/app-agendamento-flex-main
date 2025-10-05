@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Building2 } from "lucide-react";
+import HorariosFuncionamento from "./HorariosFuncionamento";
 
 interface EmpresaSettingsProps {
   empresa: {
@@ -14,7 +15,7 @@ interface EmpresaSettingsProps {
     responsavel: string;
     email: string;
     telefone: string;
-    logo_url: string | null;
+    logo_url?: string;
   };
   onUpdate: () => void;
 }
@@ -31,6 +32,14 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(empresa.logo_url || null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +66,10 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
         }
       }
 
-      const updatePayload = { ...formData, logo_url: logoUrlToSave };
+      const updatePayload = { 
+        ...formData, 
+        logo_url: logoUrlToSave
+      };
       const { error } = await supabase
         .from('empresas')
         .update(updatePayload)
@@ -82,102 +94,105 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
   };
 
   return (
-    <Card className="glass border-primary/20">
-      <CardHeader>
-        <CardTitle>Dados da Empresa</CardTitle>
-        <CardDescription>
-          Atualize as informações básicas da sua empresa
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome da Empresa</Label>
-              <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                className="glass"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="responsavel">Responsável</Label>
-              <Input
-                id="responsavel"
-                value={formData.responsavel}
-                onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
-                className="glass"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="glass"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                value={formData.telefone}
-                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                className="glass"
-                required
-              />
-            </div>
-          </div>
-
-
-
-          {/* Logo Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="logo">Logo da Empresa</Label>
-            <div className="flex items-center gap-4">
-              <div className={`w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center ${logoPreview ? '' : 'border-2 border-primary/30'}`}>
-                {logoPreview ? (
-                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
-                ) : (
-                  <Building2 className="w-8 h-8 text-primary" />
-                )}
+    <div className="space-y-8">
+      <Card className="glass border-primary/20">
+        <CardHeader>
+          <CardTitle>Dados da Empresa</CardTitle>
+          <CardDescription>
+            Atualize as informações básicas da sua empresa
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome da Empresa</Label>
+                <Input
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  className="glass"
+                  required
+                />
               </div>
-              <Input id="logo" type="file" accept="image/*" onChange={(e) => {
-                const file = (e.target as HTMLInputElement).files?.[0] || null;
-                if (file) {
-                  setLogoFile(file);
-                  setLogoPreview(URL.createObjectURL(file));
-                }
-              }} className="glass" />
+              <div className="space-y-2">
+                <Label htmlFor="responsavel">Responsável</Label>
+                <Input
+                  id="responsavel"
+                  value={formData.responsavel}
+                  onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
+                  className="glass"
+                  required
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Formatos suportados: JPG, PNG, SVG. Tamanho recomendado: quadrado.</p>
-          </div>
 
-          <Button type="submit" disabled={loading} className="w-full md:w-auto">
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Salvar Alterações
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="glass"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                  className="glass"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Logo Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="logo">Logo da Empresa</Label>
+              <div className="flex items-center gap-4">
+                <div className={`w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center ${logoPreview ? '' : 'border-2 border-primary/30'}`}>
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-8 h-8 text-primary" />
+                  )}
+                </div>
+                <Input 
+                  id="logo" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleFileChange}
+                  className="glass" 
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Formatos suportados: JPG, PNG, SVG. Tamanho recomendado: quadrado.</p>
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full md:w-auto">
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Alterações
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Componente separado para horários de funcionamento */}
+      <HorariosFuncionamento empresaId={empresa.id} />
+    </div>
   );
 };
 

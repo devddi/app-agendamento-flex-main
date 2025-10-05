@@ -1,4 +1,4 @@
-import { Calendar, Building2, Sparkles, ArrowRight, Users, Clock, Shield, CreditCard, BarChart3, CheckCircle, Zap, Smartphone, Globe, TrendingUp, MessageCircle } from "lucide-react";
+import { Calendar, Building2, Sparkles, ArrowRight, Users, Clock, Shield, CreditCard, BarChart3, CheckCircle, Zap, Smartphone, Globe, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -330,10 +330,6 @@ const Index = () => {
                     <span className="text-sm md:text-lg">Suporte prioritário</span>
                   </li>
                 </ul>
-                <Button className="w-full text-base md:text-lg py-3 md:py-4 bg-green-600 hover:bg-green-700 group">
-                  <MessageCircle className="mr-2 w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                  Fale Conosco
-                </Button>
               </div>
             </div>
           </div>

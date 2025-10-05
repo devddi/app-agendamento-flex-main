@@ -78,6 +78,32 @@ const AdminMaster = () => {
     }
   };
 
+  const criarHorariosIniciais = async (empresaId: string) => {
+    const diasSemana = [1, 2, 3, 4, 5, 6, 0]; // Segunda a Domingo (1-6, 0=domingo)
+    const horariosParaInserir = [];
+
+    // Criar todos os horários de 6:00 às 22:30 com intervalos de 30 minutos
+    for (const dia of diasSemana) {
+      for (let hora = 6; hora <= 22; hora++) {
+        for (let minuto = 0; minuto < 60; minuto += 30) {
+          const horarioFormatado = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
+          horariosParaInserir.push({
+            empresa_id: empresaId,
+            dia_semana: dia,
+            horario: horarioFormatado,
+            ativo: false // Todos começam como FALSE
+          });
+        }
+      }
+    }
+
+    const { error } = await supabase
+      .from('horarios_funcionamento')
+      .insert(horariosParaInserir);
+
+    if (error) throw error;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -124,6 +150,9 @@ const AdminMaster = () => {
         });
 
       if (roleError) throw roleError;
+
+      // 4. Criar horários iniciais com status FALSE
+      await criarHorariosIniciais(empresa.id);
 
       toast({
         title: "Empresa cadastrada!",
