@@ -16,6 +16,7 @@ interface Servico {
   duracao_minutos: number;
   preco: number;
   ativo: boolean;
+  imagem_url?: string | null;
 }
 
 interface CatalogoManagerProps {
@@ -35,6 +36,9 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
     duracao_minutos: 30,
     preco: 0,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [editingImagemUrl, setEditingImagemUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchServicos();
@@ -66,10 +70,32 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
     setSubmitting(true);
 
     try {
+      let imagemUrlToSave: string | null = editingImagemUrl || null;
+
+      if (imageFile) {
+        // Usar bucket padrão 'servicos' com subpasta por empresa
+        const targetBucket = 'servicos';
+
+        const fileExt = imageFile.name.split('.').pop();
+        const unique = (crypto as any)?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const filePath = `${empresaId}/${unique}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(targetBucket)
+          .upload(filePath, imageFile, { upsert: true, contentType: imageFile.type });
+
+        if (uploadError) {
+          toast({ title: "Falha ao enviar imagem", description: uploadError.message, variant: "destructive" });
+        } else {
+          const { data } = supabase.storage.from(targetBucket).getPublicUrl(filePath);
+          imagemUrlToSave = data.publicUrl;
+        }
+      }
+
       if (editingId) {
         const { error } = await supabase
           .from('servicos')
-          .update(formData)
+          .update({ ...formData, imagem_url: imagemUrlToSave })
           .eq('id', editingId);
 
         if (error) throw error;
@@ -77,7 +103,7 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
       } else {
         const { error } = await supabase
           .from('servicos')
-          .insert({ ...formData, empresa_id: empresaId });
+          .insert({ ...formData, imagem_url: imagemUrlToSave, empresa_id: empresaId });
 
         if (error) throw error;
         toast({ title: "Serviço adicionado!" });
@@ -105,6 +131,9 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
       duracao_minutos: servico.duracao_minutos,
       preco: servico.preco,
     });
+    setEditingImagemUrl(servico.imagem_url || null);
+    setImagePreview(servico.imagem_url || null);
+    setImageFile(null);
     setDialogOpen(true);
   };
 
@@ -137,6 +166,9 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
       duracao_minutos: 30,
       preco: 0,
     });
+    setImageFile(null);
+    setImagePreview(null);
+    setEditingImagemUrl(null);
   };
 
   if (loading) {
@@ -192,6 +224,27 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
                   rows={3}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="imagem">Imagem do Serviço (opcional)</Label>
+                <Input
+                  id="imagem"
+                  type="file"
+                  accept="image/*"
+                  className="glass"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setImageFile(file);
+                    setImagePreview(file ? URL.createObjectURL(file) : (editingImagemUrl || null));
+                  }}
+                />
+                {(imagePreview || editingImagemUrl) && (
+                  <img
+                    src={(imagePreview || editingImagemUrl) as string}
+                    alt="Pré-visualização"
+                    className="mt-2 h-24 w-full object-cover rounded-md border border-primary/20"
+                  />
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="duracao">Duração (min)</Label>
@@ -239,9 +292,15 @@ const CatalogoManager = ({ empresaId }: CatalogoManagerProps) => {
           <Card key={servico.id} className="glass border-primary/20 hover:border-primary/50 smooth-transition">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center neon-border">
-                  <Package className="w-6 h-6 text-primary" />
-                </div>
+                {servico.imagem_url ? (
+                  <div className="w-24 h-24 rounded-xl overflow-hidden neon-border">
+                    <img src={servico.imagem_url} alt={servico.nome} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center neon-border">
+                    <Package className="w-6 h-6 text-primary" />
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Button size="icon" variant="ghost" onClick={() => handleEdit(servico)}>
                     <Edit className="w-4 h-4" />

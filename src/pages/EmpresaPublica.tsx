@@ -13,7 +13,7 @@ interface Empresa {
   slug: string;
   telefone: string;
   email: string;
-  cor_secundaria: string | null;
+  logo_url: string | null;
 }
 
 interface Servico {
@@ -22,6 +22,7 @@ interface Servico {
   descricao: string | null;
   duracao_minutos: number;
   preco: number;
+  imagem_url?: string | null;
 }
 
 const EmpresaPublica = () => {
@@ -102,9 +103,13 @@ const EmpresaPublica = () => {
       <div className="relative z-10 max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="glass rounded-3xl p-8 text-center fade-in">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center neon-border mb-4">
-            <Building2 className="w-10 h-10 text-primary" />
-          </div>
+          <div className={`w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4 overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`}>
+             {empresa.logo_url ? (
+               <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-cover" />
+             ) : (
+               <Building2 className="w-10 h-10 text-primary" />
+             )}
+           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-2">{empresa.nome}</h1>
           <p className="text-muted-foreground text-lg">
             Escolha um serviço e agende seu horário
@@ -137,7 +142,12 @@ const EmpresaPublica = () => {
                   onClick={() => setSelectedServico(servico)}
                 >
                   <CardHeader>
-                    <CardTitle className="text-xl">{servico.nome}</CardTitle>
+                    {servico.imagem_url ? (
+                      <div className="w-full h-40 rounded-xl overflow-hidden neon-border">
+                        <img src={servico.imagem_url} alt={servico.nome} className="w-full h-full object-cover" />
+                      </div>
+                    ) : null}
+                    <CardTitle className="text-xl mt-2">{servico.nome}</CardTitle>
                     <CardDescription className="min-h-[3rem]">
                       {servico.descricao || 'Serviço profissional de qualidade'}
                     </CardDescription>

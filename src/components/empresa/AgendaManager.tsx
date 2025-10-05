@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Clock, User, Loader2, X } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -87,6 +87,41 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
     }
   };
 
+  const handleReverterCancelamento = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('agendamentos')
+        .select('status')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      const statusAtual = data?.status || 'pendente';
+      const statusRestaurado = statusAtual === 'cancelado' ? 'pendente' : statusAtual;
+
+      if (statusAtual !== 'cancelado') {
+        toast({ title: "Este agendamento não está cancelado." });
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from('agendamentos')
+        .update({ status: statusRestaurado })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+      toast({ title: "Cancelamento revertido!" });
+      fetchAgendamentos();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao reverter cancelamento",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmado':
@@ -159,7 +194,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     <span className="font-bold text-primary">R$ {agendamento.servico.preco.toFixed(2)}</span>
                   </div>
                 </div>
-                {agendamento.status !== 'cancelado' && (
+                {agendamento.status !== 'cancelado' ? (
                   <Button
                     variant="destructive"
                     size="sm"
@@ -168,6 +203,16 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancelar Agendamento
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleReverterCancelamento(agendamento.id)}
+                    className="w-full"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reverter Cancelamento
                   </Button>
                 )}
               </CardContent>

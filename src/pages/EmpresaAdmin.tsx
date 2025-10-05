@@ -19,8 +19,6 @@ interface Empresa {
   email: string;
   telefone: string;
   logo_url: string | null;
-  cor_primaria: string | null;
-  cor_secundaria: string | null;
   horario_funcionamento: any;
 }
 
@@ -86,8 +84,12 @@ const EmpresaAdmin = () => {
         {/* Header */}
         <div className="glass rounded-3xl p-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center neon-border">
-              <Building2 className="w-8 h-8 text-primary" />
+            <div className={`w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`}>
+              {empresa.logo_url ? (
+                <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-cover" />
+              ) : (
+                <Building2 className="w-8 h-8 text-primary" />
+              )}
             </div>
             <div>
               <h1 className="text-3xl font-bold">{empresa.nome}</h1>

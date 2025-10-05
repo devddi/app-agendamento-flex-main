@@ -106,8 +106,6 @@ export type Database = {
       }
       empresas: {
         Row: {
-          cor_primaria: string | null
-          cor_secundaria: string | null
           created_at: string | null
           email: string
           horario_funcionamento: Json | null
@@ -121,8 +119,6 @@ export type Database = {
           telefone: string
         }
         Insert: {
-          cor_primaria?: string | null
-          cor_secundaria?: string | null
           created_at?: string | null
           email: string
           horario_funcionamento?: Json | null
@@ -136,8 +132,6 @@ export type Database = {
           telefone: string
         }
         Update: {
-          cor_primaria?: string | null
-          cor_secundaria?: string | null
           created_at?: string | null
           email?: string
           horario_funcionamento?: Json | null

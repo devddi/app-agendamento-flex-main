@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Building2, Mail, Phone, User, LogOut, Loader2 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+// Cliente Supabase temporário sem persistência de sessão para não afetar a sessão atual do Admin Master
+const supabaseNoPersist = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  }
+});
 
 interface Empresa {
   id: string;
@@ -19,6 +28,7 @@ interface Empresa {
   telefone: string;
   status: string;
   created_at: string;
+  logo_url: string | null;
 }
 
 const AdminMaster = () => {
@@ -74,7 +84,7 @@ const AdminMaster = () => {
 
     try {
       // 1. Create user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabaseNoPersist.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -256,9 +266,13 @@ const AdminMaster = () => {
             <Card key={empresa.id} className="glass border-primary/20 hover:border-primary/50 smooth-transition">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center neon-border">
-                    <Building2 className="w-6 h-6 text-primary" />
-                  </div>
+                  <div className={`w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`}>
+                     {empresa.logo_url ? (
+                       <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-cover" />
+                     ) : (
+                       <Building2 className="w-6 h-6 text-primary" />
+                     )}
+                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     empresa.status === 'ativo' 
                       ? 'bg-primary/20 text-primary' 

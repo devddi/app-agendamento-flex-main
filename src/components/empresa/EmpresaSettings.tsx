@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Building2 } from "lucide-react";
 
 interface EmpresaSettingsProps {
   empresa: {
@@ -14,8 +14,7 @@ interface EmpresaSettingsProps {
     responsavel: string;
     email: string;
     telefone: string;
-    cor_primaria: string | null;
-    cor_secundaria: string | null;
+    logo_url: string | null;
   };
   onUpdate: () => void;
 }
@@ -28,18 +27,40 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
     responsavel: empresa.responsavel,
     email: empresa.email,
     telefone: empresa.telefone,
-    cor_primaria: empresa.cor_primaria || '#1a1a1a',
-    cor_secundaria: empresa.cor_secundaria || '#32F08C',
   });
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(empresa.logo_url || null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let logoUrlToSave: string | null = empresa.logo_url || null;
+
+      if (logoFile) {
+        const targetBucket = 'servicos';
+        const fileExt = logoFile.name.split('.').pop();
+        const unique = (crypto as any)?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const filePath = `logos/${empresa.id}/${unique}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(targetBucket)
+          .upload(filePath, logoFile, { upsert: true, contentType: logoFile.type });
+
+        if (uploadError) {
+          toast({ title: "Falha ao enviar logo", description: uploadError.message, variant: "destructive" });
+        } else {
+          const { data } = supabase.storage.from(targetBucket).getPublicUrl(filePath);
+          logoUrlToSave = data.publicUrl;
+        }
+      }
+
+      const updatePayload = { ...formData, logo_url: logoUrlToSave };
       const { error } = await supabase
         .from('empresas')
-        .update(formData)
+        .update(updatePayload)
         .eq('id', empresa.id);
 
       if (error) throw error;
@@ -117,41 +138,28 @@ const EmpresaSettings = ({ empresa, onUpdate }: EmpresaSettingsProps) => {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cor_primaria">Cor Primária</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="cor_primaria"
-                  type="color"
-                  value={formData.cor_primaria}
-                  onChange={(e) => setFormData({ ...formData, cor_primaria: e.target.value })}
-                  className="w-20 h-10 cursor-pointer"
-                />
-                <Input
-                  value={formData.cor_primaria}
-                  onChange={(e) => setFormData({ ...formData, cor_primaria: e.target.value })}
-                  className="glass flex-1"
-                />
+
+
+          {/* Logo Upload */}
+          <div className="space-y-2">
+            <Label htmlFor="logo">Logo da Empresa</Label>
+            <div className="flex items-center gap-4">
+              <div className={`w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center ${logoPreview ? '' : 'border-2 border-primary/30'}`}>
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-primary" />
+                )}
               </div>
+              <Input id="logo" type="file" accept="image/*" onChange={(e) => {
+                const file = (e.target as HTMLInputElement).files?.[0] || null;
+                if (file) {
+                  setLogoFile(file);
+                  setLogoPreview(URL.createObjectURL(file));
+                }
+              }} className="glass" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="cor_secundaria">Cor Secundária</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="cor_secundaria"
-                  type="color"
-                  value={formData.cor_secundaria}
-                  onChange={(e) => setFormData({ ...formData, cor_secundaria: e.target.value })}
-                  className="w-20 h-10 cursor-pointer"
-                />
-                <Input
-                  value={formData.cor_secundaria}
-                  onChange={(e) => setFormData({ ...formData, cor_secundaria: e.target.value })}
-                  className="glass flex-1"
-                />
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">Formatos suportados: JPG, PNG, SVG. Tamanho recomendado: quadrado.</p>
           </div>
 
           <Button type="submit" disabled={loading} className="w-full md:w-auto">
