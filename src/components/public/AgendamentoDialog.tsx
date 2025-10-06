@@ -39,6 +39,58 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
   });
   const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
 
+  // Helpers para fuso horário do Brasil (America/Sao_Paulo)
+  const getBRDateString = (date: Date) => {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return fmt.format(date); // YYYY-MM-DD
+  };
+
+  const isDateBeforeBR = (date: Date, reference: Date) => {
+    return getBRDateString(date) < getBRDateString(reference);
+  };
+
+  const getBRNowMinutes = () => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date());
+    const hh = Number(parts.find(p => p.type === 'hour')?.value || '0');
+    const mm = Number(parts.find(p => p.type === 'minute')?.value || '0');
+    return hh * 60 + mm;
+  };
+
+  const getBRWeekdayNumber = (date: Date) => {
+    const weekday = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      weekday: 'long',
+    }).format(date);
+    const map: Record<string, number> = {
+      Sunday: 0,
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+    };
+    return map[weekday] ?? date.getDay();
+  };
+
+  const isHorarioPassado = (hora: string) => {
+    if (!selectedDate) return false;
+    // Desabilitar horários passados apenas para o dia atual no fuso brasileiro
+    if (getBRDateString(selectedDate) !== getBRDateString(new Date())) return false;
+    const [hh, mm] = hora.split(':').map(Number);
+    return hh * 60 + mm < getBRNowMinutes();
+  };
+
   const formatTelefone = (value: string) => {
     // Remove todos os caracteres não numéricos
     const numbers = value.replace(/\D/g, '');
@@ -58,8 +110,8 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
   // Buscar horários disponíveis da empresa para a data selecionada
   const fetchHorariosDisponiveis = async (data: Date) => {
     try {
-      const diaSemana = data.getDay();
-      const dataFormatada = format(data, 'yyyy-MM-dd');
+      const diaSemana = getBRWeekdayNumber(data);
+      const dataFormatada = getBRDateString(data);
       
       // Buscar horários de funcionamento
       const responseHorarios = await (supabase as any)
@@ -191,7 +243,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
           empresa_id: empresa.id,
           cliente_id: clienteId,
           servico_id: servico.id,
-          data: format(selectedDate, 'yyyy-MM-dd'),
+          data: getBRDateString(selectedDate),
           hora: selectedTime + ':00', // Garantir formato TIME (HH:MM:SS)
           status: 'confirmado',
         });
@@ -248,7 +300,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
                     mode="single"
                     selected={selectedDate}
                     onSelect={handleDateSelect}
-                    disabled={(date) => date < new Date()}
+                    disabled={(date) => isDateBeforeBR(date as Date, new Date())}
                     locale={ptBR}
                     className="rounded-2xl glass border-primary/20 p-4"
                   />
@@ -270,6 +322,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
                           variant="outline"
                           className="glass"
                           onClick={() => handleSelectTime(hora)}
+                          disabled={isHorarioPassado(hora)}
                         >
                           {hora}
                         </Button>
