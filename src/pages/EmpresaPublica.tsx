@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Loader2, Clock, DollarSign } from "lucide-react";
+import { Building2, Loader2, Clock, DollarSign, MapPin } from "lucide-react";
 import AgendamentoDialog from "@/components/public/AgendamentoDialog";
 
 interface Empresa {
@@ -25,6 +25,16 @@ interface Servico {
   imagem_url?: string | null;
 }
 
+interface Endereco {
+  cep: string | null;
+  cidade: string | null;
+  uf: string | null;
+  rua: string | null;
+  numero: string | null;
+  bairro: string | null;
+  ponto_referencia: string | null;
+}
+
 const EmpresaPublica = () => {
   const { slug } = useParams();
   const { toast } = useToast();
@@ -32,10 +42,30 @@ const EmpresaPublica = () => {
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
+  const [endereco, setEndereco] = useState<Endereco | null>(null);
 
   useEffect(() => {
     fetchEmpresa();
   }, [slug]);
+
+  const formatCep = (cep?: string | null) => {
+    if (!cep) return "";
+    const digits = cep.replace(/\D/g, "").slice(0, 8);
+    if (digits.length !== 8) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  };
+
+  const openMapsForEndereco = () => {
+    if (!endereco) return;
+    const parts = [
+      [endereco.rua, endereco.numero].filter(Boolean).join(' '),
+      endereco.bairro,
+      [endereco.cidade, endereco.uf].filter(Boolean).join(' '),
+    ].filter(Boolean);
+    const query = parts.join(', ');
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    window.open(url, '_blank', 'noopener');
+  };
 
   const fetchEmpresa = async () => {
     try {
@@ -58,6 +88,14 @@ const EmpresaPublica = () => {
 
       if (servicosError) throw servicosError;
       setServicos(servicosData || []);
+
+      // Buscar endereço da empresa para exibição pública
+      const { data: enderecoData } = await supabase
+        .from('enderecos_empresas')
+        .select('cep,cidade,uf,rua,numero,bairro,ponto_referencia')
+        .eq('empresa_id', empresaData.id)
+        .single();
+      setEndereco(enderecoData || null);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar dados",
@@ -115,6 +153,40 @@ const EmpresaPublica = () => {
             Escolha um serviço e agende seu horário
           </p>
         </div>
+
+        {/* Endereço da Empresa */}
+        {endereco && (
+          <Card className="glass border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-primary mt-1" />
+                <div className="text-sm">
+                  <div className="font-medium">
+                    {[endereco.rua, endereco.numero].filter(Boolean).join(', ')}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {[
+                      endereco.bairro,
+                      [endereco.cidade, endereco.uf].filter(Boolean).join(' - '),
+                    ]
+                      .filter(Boolean)
+                      .join(' • ')}
+                  </div>
+                  {/* Removido CEP */}
+                  {endereco.ponto_referencia && (
+                    <div className="text-muted-foreground">Ref.: {endereco.ponto_referencia}</div>
+                  )}
+                  <div className="mt-3">
+                    <Button variant="outline" size="sm" onClick={openMapsForEndereco} className="gap-2">
+                      <MapPin className="w-4 h-4" />
+                      <span>Como chegar</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Catálogo de Serviços */}
         <div className="space-y-6">

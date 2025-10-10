@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -122,6 +122,27 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
     }
   };
 
+  const handleFinalizar = async (id: string) => {
+    if (!confirm('Finalizar este atendimento?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('agendamentos')
+        .update({ status: 'finalizado' })
+        .eq('id', id);
+
+      if (error) throw error;
+      toast({ title: "Atendimento finalizado!" });
+      fetchAgendamentos();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao finalizar atendimento",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmado':
@@ -130,6 +151,8 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
         return 'bg-destructive/20 text-destructive';
       case 'pendente':
         return 'bg-yellow-500/20 text-yellow-500';
+      case 'finalizado':
+        return 'bg-emerald-500/20 text-emerald-600';
       default:
         return 'bg-muted';
     }
@@ -194,17 +217,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     <span className="font-bold text-primary">R$ {agendamento.servico.preco.toFixed(2)}</span>
                   </div>
                 </div>
-                {agendamento.status !== 'cancelado' ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleCancelar(agendamento.id)}
-                    className="w-full"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancelar Agendamento
-                  </Button>
-                ) : (
+                {agendamento.status === 'cancelado' ? (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -214,6 +227,35 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     <RotateCcw className="w-4 h-4 mr-2" />
                     Reverter Cancelamento
                   </Button>
+                ) : agendamento.status === 'finalizado' ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled
+                    className="w-full"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Atendimento Finalizado
+                  </Button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleFinalizar(agendamento.id)}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Finalizar Atendimento
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleCancelar(agendamento.id)}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Cancelar Agendamento
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>

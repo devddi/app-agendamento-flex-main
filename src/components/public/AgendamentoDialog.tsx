@@ -245,7 +245,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
           servico_id: servico.id,
           data: getBRDateString(selectedDate),
           hora: selectedTime + ':00', // Garantir formato TIME (HH:MM:SS)
-          status: 'confirmado',
+          status: 'pendente',
         });
 
       if (agendamentoError) throw agendamentoError;
