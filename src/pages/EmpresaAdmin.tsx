@@ -85,57 +85,92 @@ const EmpresaAdmin = () => {
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="glass rounded-3xl p-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`}>
+        <div className="glass rounded-3xl p-6">
+          {/* Mobile Layout */}
+          <div className="flex md:hidden flex-col items-center space-y-4">
+            {/* Logo centralizada */}
+            <div className={`w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`} style={{aspectRatio: '1/1'}}>
               {empresa.logo_url ? (
                 <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-cover" />
               ) : (
                 <Building2 className="w-8 h-8 text-primary" />
               )}
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">{empresa.nome}</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Link público: {window.location.origin}/empresa/{empresa.slug}
-                </p>
-                <button
-                  onClick={() => window.open(`${window.location.origin}/empresa/${empresa.slug}`, '_blank')}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  title="Abrir em nova guia"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Nome da empresa */}
+            <h1 className="text-2xl font-bold text-center whitespace-nowrap">{empresa.nome}</h1>
+            {/* Botões */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => window.open(`${window.location.origin}/empresa/${empresa.slug}`, '_blank')}
+              >
+                <ExternalLink className="w-4 h-4" />
+                Link público
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setConfigDialogOpen(true)}>
+                <User className="w-4 h-4" />
+              </Button>
+              <Button onClick={handleSignOut} variant="outline" size="sm" className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600">
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <User className="w-4 h-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Configurações da Empresa</DialogTitle>
-                  <DialogDescription>
-                    Gerencie as informações e configurações da sua empresa.
-                  </DialogDescription>
-                </DialogHeader>
-                <EmpresaSettings 
-                  empresa={empresa} 
-                  onUpdate={() => {
-                    fetchEmpresa();
-                    setConfigDialogOpen(false);
-                  }} 
-                />
-              </DialogContent>
-            </Dialog>
-            <Button onClick={handleSignOut} variant="outline" size="icon">
-              <LogOut className="w-4 h-4" />
-            </Button>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`w-16 h-16 aspect-square rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ${empresa.logo_url ? '' : 'border-2 border-primary/30'}`}>
+                {empresa.logo_url ? (
+                  <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-primary" />
+                )}
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">{empresa.nome}</h1>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Link público: {window.location.origin}/empresa/{empresa.slug}
+                  </p>
+                  <button
+                    onClick={() => window.open(`${window.location.origin}/empresa/${empresa.slug}`, '_blank')}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title="Abrir em nova guia"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Configurações da Empresa</DialogTitle>
+                    <DialogDescription>
+                      Gerencie as informações e configurações da sua empresa.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <EmpresaSettings 
+                    empresa={empresa} 
+                    onUpdate={() => {
+                      fetchEmpresa();
+                      setConfigDialogOpen(false);
+                    }} 
+                  />
+                </DialogContent>
+              </Dialog>
+              <Button onClick={handleSignOut} variant="outline" size="icon" className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -143,19 +178,19 @@ const EmpresaAdmin = () => {
         <Tabs defaultValue="catalogo" className="w-full">
           <TabsList className="glass grid w-full grid-cols-4 p-1">
             <TabsTrigger value="catalogo" className="gap-2">
-              <Package className="w-4 h-4" />
+              <Package className="w-4 h-4 hidden md:block" />
               Catálogo
             </TabsTrigger>
             <TabsTrigger value="agenda" className="gap-2">
-              <CalendarIcon className="w-4 h-4" />
+              <CalendarIcon className="w-4 h-4 hidden md:block" />
               Agenda
             </TabsTrigger>
             <TabsTrigger value="clientes" className="gap-2">
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 hidden md:block" />
               Clientes
             </TabsTrigger>
             <TabsTrigger value="horarios" className="gap-2">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-4 h-4 hidden md:block" />
               Horários
             </TabsTrigger>
           </TabsList>

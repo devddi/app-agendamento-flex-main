@@ -187,16 +187,16 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      <CalendarIcon className="w-5 h-5 text-primary" />
+                    <CardTitle className="flex items-center gap-2 text-base md:text-xl">
+                      <CalendarIcon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                       {format(new Date(agendamento.data + 'T00:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
+                    <CardDescription className="flex items-center gap-2 text-xs md:text-sm">
+                      <Clock className="w-3 h-3 md:w-4 md:h-4" />
                       {agendamento.hora} - {agendamento.servico.nome}
                     </CardDescription>
                   </div>
-                  <Badge className={getStatusColor(agendamento.status)}>
+                  <Badge className={`${getStatusColor(agendamento.status)} text-xs px-2 py-1 md:text-sm`}>
                     {agendamento.status}
                   </Badge>
                 </div>
@@ -222,9 +222,9 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     variant="secondary"
                     size="sm"
                     onClick={() => handleReverterCancelamento(agendamento.id)}
-                    className="w-full"
+                    className="w-full h-8 text-xs md:h-9 md:text-sm"
                   >
-                    <RotateCcw className="w-4 h-4 mr-2" />
+                    <RotateCcw className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                     Reverter Cancelamento
                   </Button>
                 ) : agendamento.status === 'finalizado' ? (
@@ -232,27 +232,29 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     variant="secondary"
                     size="sm"
                     disabled
-                    className="w-full"
+                    className="w-full h-8 text-xs md:h-9 md:text-sm"
                   >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                     Atendimento Finalizado
                   </Button>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
                     <Button
                       variant="default"
                       size="sm"
                       onClick={() => handleFinalizar(agendamento.id)}
+                      className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm col-span-2 md:col-span-1"
                     >
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                       Finalizar Atendimento
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleCancelar(agendamento.id)}
+                      className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm col-span-2 md:col-span-1"
                     >
-                      <X className="w-4 h-4 mr-2" />
+                      <X className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                       Cancelar Agendamento
                     </Button>
                   </div>

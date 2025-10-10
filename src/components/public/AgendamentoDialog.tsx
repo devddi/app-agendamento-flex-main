@@ -124,13 +124,13 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
       
       if (responseHorarios.error) throw responseHorarios.error;
       
-      // Buscar agendamentos já confirmados para esta data
+      // Buscar agendamentos já marcados (confirmados ou pendentes) para esta data
       const { data: agendamentos, error: agendamentosError } = await supabase
         .from('agendamentos')
         .select('hora')
         .eq('empresa_id', empresa.id)
         .eq('data', dataFormatada)
-        .eq('status', 'confirmado');
+        .in('status', ['confirmado', 'pendente']);
       
       if (agendamentosError) throw agendamentosError;
       
@@ -142,7 +142,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
         }
         return a.hora;
       }) || [];
-      
+
       const horariosFormatados = (responseHorarios.data as any[])?.map((h: any) => 
         typeof h.horario === 'string' ? h.horario.slice(0, 5) : h.horario
       ) || [];
