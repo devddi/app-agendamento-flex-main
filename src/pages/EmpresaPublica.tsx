@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Loader2, Clock, DollarSign, MapPin } from "lucide-react";
+import { Building2, Loader2, Clock, DollarSign, MapPin, Calendar } from "lucide-react";
 import AgendamentoDialog from "@/components/public/AgendamentoDialog";
+import MeusAgendamentosDialog from "@/components/public/MeusAgendamentosDialog";
 
 interface Empresa {
   id: string;
@@ -43,6 +44,7 @@ const EmpresaPublica = () => {
   const [loading, setLoading] = useState(true);
   const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
   const [endereco, setEndereco] = useState<Endereco | null>(null);
+  const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(false);
 
   useEffect(() => {
     fetchEmpresa();
@@ -149,9 +151,17 @@ const EmpresaPublica = () => {
              )}
            </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-2">{empresa.nome}</h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-lg mb-4">
             Escolha um serviço e agende seu horário
           </p>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowMeusAgendamentos(true)}
+            className="gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Ver Meus Agendamentos
+          </Button>
         </div>
 
         {/* Endereço da Empresa */}
@@ -252,6 +262,15 @@ const EmpresaPublica = () => {
           empresa={empresa}
           open={!!selectedServico}
           onClose={() => setSelectedServico(null)}
+        />
+      )}
+
+      {/* Meus Agendamentos Dialog */}
+      {empresa && (
+        <MeusAgendamentosDialog
+          open={showMeusAgendamentos}
+          onClose={() => setShowMeusAgendamentos(false)}
+          empresaId={empresa.id}
         />
       )}
     </div>
