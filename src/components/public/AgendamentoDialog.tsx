@@ -107,6 +107,51 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
     }
   };
 
+  // Função para chamar o webhook
+  const callWebhook = async (telefoneEmpresa: string, dadosAgendamento: {
+    nomeCliente: string;
+    telefoneCliente: string;
+    servico: string;
+    tempo: number;
+    valor: number;
+    data: string;
+    hora: string;
+    nomeEmpresa: string;
+    logoEmpresa: string | null;
+  }) => {
+    try {
+      // Remove formatação do telefone da empresa para usar na URL
+      const telefoneEmpresaLimpo = telefoneEmpresa.replace(/\D/g, '');
+      
+      const webhookUrl = `https://n8n.agendatop.com/webhook/${telefoneEmpresaLimpo}`;
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome_cliente: dadosAgendamento.nomeCliente,
+          telefone_cliente: dadosAgendamento.telefoneCliente,
+          servico: dadosAgendamento.servico,
+          tempo: dadosAgendamento.tempo,
+          valor: dadosAgendamento.valor,
+          data: dadosAgendamento.data,
+          hora: dadosAgendamento.hora,
+          nome_empresa: dadosAgendamento.nomeEmpresa,
+          logo_empresa: dadosAgendamento.logoEmpresa,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Erro ao chamar webhook:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Erro ao chamar webhook:', error);
+      // Não vamos mostrar erro para o usuário, pois o agendamento já foi criado com sucesso
+    }
+  };
+
   // Buscar horários disponíveis da empresa para a data selecionada
   const fetchHorariosDisponiveis = async (data: Date) => {
     try {
@@ -218,6 +263,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
     setLoading(true);
     try {
       let clienteId = clienteExistente?.id;
+      let nomeCliente = clienteExistente?.nome || formData.nome;
 
       // Se não existe cliente, criar
       if (!clienteId) {
@@ -234,6 +280,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
 
         if (clienteError) throw clienteError;
         clienteId = novoCliente.id;
+        nomeCliente = formData.nome;
       }
 
       // Criar agendamento
@@ -249,6 +296,28 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
         });
 
       if (agendamentoError) throw agendamentoError;
+
+      // Buscar dados da empresa para o webhook
+      const { data: empresaData, error: empresaError } = await supabase
+        .from('empresas')
+        .select('telefone, nome, logo_url')
+        .eq('id', empresa.id)
+        .single();
+
+      if (!empresaError && empresaData?.telefone) {
+        // Chamar webhook com os dados do agendamento
+        await callWebhook(empresaData.telefone, {
+          nomeCliente: nomeCliente,
+          telefoneCliente: telefone,
+          servico: servico.nome,
+          tempo: servico.duracao_minutos,
+          valor: servico.preco,
+          data: selectedDate ? format(selectedDate, 'dd/MM/yyyy', { locale: ptBR }) : '',
+          hora: selectedTime,
+          nomeEmpresa: empresaData.nome,
+          logoEmpresa: empresaData.logo_url,
+        });
+      }
 
       // Atualizar lista de horários disponíveis após confirmar
       await fetchHorariosDisponiveis(selectedDate);
