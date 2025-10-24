@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw, CheckCircle2, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import FinalizarAtendimentoModal from "./FinalizarAtendimentoModal";
 
 interface Agendamento {
   id: string;
@@ -48,6 +49,8 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
     status: ""
   });
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
+  const [agendamentoParaFinalizar, setAgendamentoParaFinalizar] = useState<Agendamento | null>(null);
 
   useEffect(() => {
     fetchAgendamentos();
@@ -178,25 +181,18 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
     }
   };
 
-  const handleFinalizar = async (id: string) => {
-    if (!confirm('Finalizar este atendimento?')) return;
+  const handleFinalizar = (agendamento: Agendamento) => {
+    setAgendamentoParaFinalizar(agendamento);
+    setModalFinalizarAberto(true);
+  };
 
-    try {
-      const { error } = await supabase
-        .from('agendamentos')
-        .update({ status: 'finalizado' })
-        .eq('id', id);
+  const handleFecharModal = () => {
+    setModalFinalizarAberto(false);
+    setAgendamentoParaFinalizar(null);
+  };
 
-      if (error) throw error;
-      toast({ title: "Atendimento finalizado!" });
-      fetchAgendamentos();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao finalizar atendimento",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const handleSucessoFinalizacao = () => {
+    fetchAgendamentos();
   };
 
   const getStatusColor = (status: string) => {
@@ -393,7 +389,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => handleFinalizar(agendamento.id)}
+                      onClick={() => handleFinalizar(agendamento)}
                       className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm col-span-2 md:col-span-1"
                     >
                       <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 mr-2" />
@@ -415,6 +411,14 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
           ))
         )}
       </div>
+
+      <FinalizarAtendimentoModal
+        isOpen={modalFinalizarAberto}
+        onClose={handleFecharModal}
+        agendamento={agendamentoParaFinalizar}
+        empresaId={empresaId}
+        onSuccess={handleSucessoFinalizacao}
+      />
     </div>
   );
 };
