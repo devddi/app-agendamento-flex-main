@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw, CheckCircle2, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -28,14 +31,31 @@ interface AgendaManagerProps {
   empresaId: string;
 }
 
+interface Filtros {
+  data: string;
+  cliente: string;
+  status: string;
+}
+
 const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
   const { toast } = useToast();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [agendamentosFiltrados, setAgendamentosFiltrados] = useState<Agendamento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtros, setFiltros] = useState<Filtros>({
+    data: "",
+    cliente: "",
+    status: ""
+  });
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
   useEffect(() => {
     fetchAgendamentos();
   }, [empresaId]);
+
+  useEffect(() => {
+    aplicarFiltros();
+  }, [agendamentos, filtros]);
 
   const fetchAgendamentos = async () => {
     try {
@@ -50,8 +70,8 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
           servico:servicos(nome, duracao_minutos, preco)
         `)
         .eq('empresa_id', empresaId)
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
 
       if (error) throw error;
       setAgendamentos(data as any || []);
@@ -64,6 +84,42 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const aplicarFiltros = () => {
+    let resultado = [...agendamentos];
+
+    // Filtro por data
+    if (filtros.data) {
+      resultado = resultado.filter(agendamento => 
+        agendamento.data.includes(filtros.data)
+      );
+    }
+
+    // Filtro por cliente
+    if (filtros.cliente) {
+      resultado = resultado.filter(agendamento => 
+        agendamento.cliente.nome.toLowerCase().includes(filtros.cliente.toLowerCase()) ||
+        agendamento.cliente.telefone.includes(filtros.cliente)
+      );
+    }
+
+    // Filtro por status
+    if (filtros.status) {
+      resultado = resultado.filter(agendamento => 
+        agendamento.status === filtros.status
+      );
+    }
+
+    setAgendamentosFiltrados(resultado);
+  };
+
+  const limparFiltros = () => {
+    setFiltros({
+      data: "",
+      cliente: "",
+      status: ""
+    });
   };
 
   const handleCancelar = async (id: string) => {
@@ -145,8 +201,6 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmado':
-        return 'bg-primary/20 text-primary';
       case 'cancelado':
         return 'bg-destructive/20 text-destructive';
       case 'pendente':
@@ -155,6 +209,19 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
         return 'bg-emerald-500/20 text-emerald-600';
       default:
         return 'bg-muted';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'cancelado':
+        return 'Cancelado';
+      case 'pendente':
+        return 'Pendente';
+      case 'finalizado':
+        return 'Finalizado';
+      default:
+        return status;
     }
   };
 
@@ -168,21 +235,105 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Agenda de Atendimentos</h2>
-        <p className="text-muted-foreground">Gerencie seus agendamentos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Agenda de Atendimentos</h2>
+          <p className="text-muted-foreground">Gerencie seus agendamentos</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => setMostrarFiltros(!mostrarFiltros)}
+          className="gap-2"
+        >
+          <Filter className="w-4 h-4" />
+          Filtros
+        </Button>
       </div>
 
+      {/* Painel de Filtros */}
+      {mostrarFiltros && (
+        <Card className="glass border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Search className="w-5 h-5" />
+              Filtros de Busca
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="filtro-data">Data</Label>
+                <Input
+                  id="filtro-data"
+                  type="date"
+                  value={filtros.data}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, data: e.target.value }))}
+                  placeholder="Filtrar por data"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="filtro-cliente">Cliente</Label>
+                <Input
+                  id="filtro-cliente"
+                  value={filtros.cliente}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, cliente: e.target.value }))}
+                  placeholder="Nome ou telefone do cliente"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="filtro-status">Status</Label>
+                <Select
+                  value={filtros.status || "todos"}
+                  onValueChange={(value) => setFiltros(prev => ({ ...prev, status: value === "todos" ? "" : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos os status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os status</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="finalizado">Finalizado</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                {agendamentosFiltrados.length} agendamento(s) encontrado(s)
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={limparFiltros}
+                className="gap-2"
+              >
+                <X className="w-4 h-4" />
+                Limpar Filtros
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4">
-        {agendamentos.length === 0 ? (
+        {agendamentosFiltrados.length === 0 ? (
           <Card className="glass border-primary/20">
             <CardContent className="p-12 text-center">
               <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Nenhum agendamento encontrado</p>
+              <p className="text-muted-foreground">
+                {agendamentos.length === 0 
+                  ? "Nenhum agendamento encontrado" 
+                  : "Nenhum agendamento corresponde aos filtros aplicados"
+                }
+              </p>
             </CardContent>
           </Card>
         ) : (
-          agendamentos.map((agendamento) => (
+          agendamentosFiltrados.map((agendamento) => (
             <Card key={agendamento.id} className="glass border-primary/20 hover:border-primary/50 smooth-transition">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -197,7 +348,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                     </CardDescription>
                   </div>
                   <Badge className={`${getStatusColor(agendamento.status)} text-xs px-2 py-1 md:text-sm`}>
-                    {agendamento.status}
+                    {getStatusLabel(agendamento.status)}
                   </Badge>
                 </div>
               </CardHeader>

@@ -169,13 +169,13 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
       
       if (responseHorarios.error) throw responseHorarios.error;
       
-      // Buscar agendamentos já marcados (confirmados ou pendentes) para esta data
+      // Buscar agendamentos já marcados (pendentes) para esta data
       const { data: agendamentos, error: agendamentosError } = await supabase
         .from('agendamentos')
         .select('hora')
         .eq('empresa_id', empresa.id)
         .eq('data', dataFormatada)
-        .in('status', ['confirmado', 'pendente']);
+        .in('status', ['pendente']);
       
       if (agendamentosError) throw agendamentosError;
       
@@ -323,7 +323,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
       await fetchHorariosDisponiveis(selectedDate);
 
       toast({
-        title: "🎉 Agendamento confirmado!",
+        title: "🎉 Agendamento realizado!",
         description: "Você receberá uma confirmação no WhatsApp em breve.",
       });
 

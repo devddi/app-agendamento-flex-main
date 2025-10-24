@@ -71,8 +71,6 @@ const MeusAgendamentosDialog = ({ open, onClose, empresaId }: MeusAgendamentosDi
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmado':
-        return 'bg-green-500/20 text-green-700 border-green-500/30';
       case 'pendente':
         return 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30';
       case 'cancelado':

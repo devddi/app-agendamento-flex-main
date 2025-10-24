@@ -23,18 +23,30 @@ const AdminMasterLogin = () => {
         email: formData.email,
         password: formData.password,
       });
-      if (error) throw error;
+      
+      if (error) {
+        // Verificar se é erro de credenciais inválidas
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('Email not confirmed') ||
+            error.message.includes('Invalid email or password')) {
+          throw new Error('Conta de administrador não encontrada. Verifique o e-mail e senha informados.');
+        }
+        throw error;
+      }
       
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id);
-      if (rolesError) throw rolesError;
+        
+      if (rolesError) {
+        throw new Error('Erro ao verificar permissões de administrador.');
+      }
 
       const isAdmin = roles?.some(r => r.role === 'admin_master');
       if (!isAdmin) {
         await supabase.auth.signOut();
-        throw new Error('Sua conta não possui permissão de Admin Master.');
+        throw new Error('Esta conta não possui permissão de Admin Master. Apenas administradores autorizados podem acessar esta área.');
       }
 
       toast({ title: 'Login realizado!', description: 'Bem-vindo ao painel Admin Master.' });

@@ -5,13 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Loader2, Building2, Package, Calendar as CalendarIcon, Users, User, Clock, ExternalLink } from "lucide-react";
+import { LogOut, Loader2, Building2, Package, Calendar as CalendarIcon, Users, User, Clock, ExternalLink, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import EmpresaSettings from "@/components/empresa/EmpresaSettings";
 import CatalogoManager from "@/components/empresa/CatalogoManager";
 import AgendaManager from "@/components/empresa/AgendaManager";
 import ClientesManager from "@/components/empresa/ClientesManager";
 import HorariosFuncionamento from "@/components/empresa/HorariosFuncionamento";
+import GestaoFinanceira from "@/components/empresa/GestaoFinanceira";
+import GlobalHamburgerMenu from "@/components/empresa/GlobalHamburgerMenu";
 
 interface Empresa {
   id: string;
@@ -32,6 +34,7 @@ const EmpresaAdmin = () => {
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [abaSelecionada, setAbaSelecionada] = useState("catalogo");
 
   useEffect(() => {
     if (!authLoading) {
@@ -83,6 +86,14 @@ const EmpresaAdmin = () => {
 
   return (
     <div className="min-h-screen p-6">
+      {/* Menu Global Flutuante - Apenas Mobile */}
+      <GlobalHamburgerMenu 
+        empresa={empresa}
+        abaSelecionada={abaSelecionada}
+        onAbaChange={setAbaSelecionada}
+        onEmpresaUpdate={fetchEmpresa}
+      />
+      
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="glass rounded-3xl p-6">
@@ -175,8 +186,8 @@ const EmpresaAdmin = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="catalogo" className="w-full">
-          <TabsList className="glass grid w-full grid-cols-4 p-1">
+        <Tabs value={abaSelecionada} onValueChange={setAbaSelecionada} className="w-full">
+          <TabsList className="glass grid w-full grid-cols-5 p-1 hidden md:grid">
             <TabsTrigger value="catalogo" className="gap-2">
               <Package className="w-4 h-4 hidden md:block" />
               Catálogo
@@ -192,6 +203,10 @@ const EmpresaAdmin = () => {
             <TabsTrigger value="horarios" className="gap-2">
               <Clock className="w-4 h-4 hidden md:block" />
               Horários
+            </TabsTrigger>
+            <TabsTrigger value="financeiro" className="gap-2">
+              <DollarSign className="w-4 h-4 hidden md:block" />
+              Financeiro
             </TabsTrigger>
           </TabsList>
 
@@ -209,6 +224,10 @@ const EmpresaAdmin = () => {
 
           <TabsContent value="horarios" className="mt-6">
             <HorariosFuncionamento empresaId={empresa.id} />
+          </TabsContent>
+
+          <TabsContent value="financeiro" className="mt-6">
+            <GestaoFinanceira empresaId={empresa.id} />
           </TabsContent>
         </Tabs>
       </div>

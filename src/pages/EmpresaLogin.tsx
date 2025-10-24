@@ -27,27 +27,44 @@ const EmpresaLogin = () => {
         password: formData.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Verificar se é erro de credenciais inválidas
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('Email not confirmed') ||
+            error.message.includes('Invalid email or password')) {
+          throw new Error('Empresa não encontrada. Verifique o e-mail e senha informados.');
+        }
+        throw error;
+      }
 
       // Check if user is empresa_owner
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id);
+
+      if (rolesError) {
+        throw new Error('Erro ao verificar permissões da empresa.');
+      }
 
       const isEmpresaOwner = roles?.some(r => r.role === 'empresa_owner');
 
       if (!isEmpresaOwner) {
         await supabase.auth.signOut();
-        throw new Error('Você não tem permissão para acessar esta área');
+        throw new Error('Esta conta não está associada a nenhuma empresa. Verifique suas credenciais.');
       }
 
       // Get empresa slug
-      const { data: empresa } = await supabase
+      const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select('slug')
         .eq('owner_id', data.user.id)
         .single();
+
+      if (empresaError || !empresa) {
+        await supabase.auth.signOut();
+        throw new Error('Empresa não encontrada no sistema. Entre em contato com o suporte.');
+      }
 
       toast({
         title: "Login realizado!",
@@ -55,11 +72,9 @@ const EmpresaLogin = () => {
       });
 
       // Navigate after a small delay to ensure auth state is updated
-      if (empresa) {
-        setTimeout(() => {
-          navigate(`/empresa/${empresa.slug}/admin`);
-        }, 100);
-      }
+      setTimeout(() => {
+        navigate(`/empresa/${empresa.slug}/admin`);
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",
