@@ -46,6 +46,12 @@ const EmpresaPublica = () => {
   const [endereco, setEndereco] = useState<Endereco | null>(null);
   const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(false);
 
+  const sanitizeTelefone = (telefone?: string | null) => {
+    if (!telefone) return "";
+    const digits = telefone.replace(/\D/g, "");
+    return digits.startsWith("55") ? digits : `55${digits}`;
+  };
+
   useEffect(() => {
     fetchEmpresa();
   }, [slug]);
@@ -154,14 +160,31 @@ const EmpresaPublica = () => {
           <p className="text-muted-foreground text-lg mb-4">
             Escolha um serviço e agende seu horário
           </p>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowMeusAgendamentos(true)}
-            className="gap-2"
-          >
-            <Calendar className="w-4 h-4" />
-            Ver Meus Agendamentos
-          </Button>
+          <div className="flex flex-col items-center gap-2 md:flex-row md:justify-center">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowMeusAgendamentos(true)}
+              className="gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Ver Meus Agendamentos
+            </Button>
+            {empresa.telefone && (
+              <Button
+                onClick={() => {
+                  const mensagem = "Olá!\n Vim pelo link do sistema de agendamentos. Gostaria de informações e agendar um horário.";
+                  const url = `https://wa.me/${sanitizeTelefone(empresa.telefone)}?text=${encodeURIComponent(mensagem)}`;
+                  window.open(url, '_blank', 'noopener');
+                }}
+                className="gap-2 bg-green-500 hover:bg-green-600 text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
+                  <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.643-.182-.066-.315-.1-.447.099-.132.198-.513.643-.628.775-.115.132-.232.149-.43.05-.197-.1-.834-.308-1.588-.985-.587-.522-.98-1.168-1.095-1.365-.115-.198-.012-.305.087-.403.089-.088.198-.23.297-.346.1-.115.132-.198.198-.33.066-.132.033-.248-.017-.347-.05-.099-.447-1.077-.612-1.47-.161-.387-.323-.334-.447-.34l-.38-.007c-.115 0-.3.05-.457.248-.157.198-.6.586-.6 1.43 0 .844.616 1.659.702 1.773.082.115 1.216 1.857 2.953 2.6.413.178.735.285.987.366.414.132.79.114 1.088.069.332-.05 1.017-.416 1.16-.818.144-.403.144-.748.1-.818-.04-.07-.18-.113-.377-.212"/>
+                </svg>
+                Chamar no WhatsApp
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Endereço da Empresa */}
