@@ -123,7 +123,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
       // Remove formatação do telefone da empresa para usar na URL
       const telefoneEmpresaLimpo = telefoneEmpresa.replace(/\D/g, '');
       
-      const webhookUrl = `https://n8n.agendatop.com/webhook/${telefoneEmpresaLimpo}`;
+      const webhookUrl = `https://n8n-n8n.j6kpgx.easypanel.host/webhook/${telefoneEmpresaLimpo}`;
       
       const response = await fetch(webhookUrl, {
         method: 'POST',
