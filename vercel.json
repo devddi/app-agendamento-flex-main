@@ -4,7 +4,7 @@
       "source": "/(.*)",
       "destination": "/index.html",
       "has": [
-        { "type": "header", "key": "Accept", "value": "text/html" }
+        { "type": "header", "key": "Accept", "value": ".*text/html.*" }
       ]
     }
   ]
