@@ -280,7 +280,15 @@ const Index = () => {
                 Comece em minutos, configure sua empresa e compartilhe seu link público com seus clientes hoje mesmo.
               </p>
               <div className="flex items-center justify-center">
-                <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">
+                <Button
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 md:px-8 py-3 md:py-4 text-base md:text-lg"
+                  onClick={() => {
+                    const text = encodeURIComponent("Olá, tenho interesse em conhecer mais o sistema AgendaTOP.");
+                    const url = `https://wa.me/5588988634517?text=${text}`;
+                    window.open(url, "_blank", "noopener");
+                  }}
+                >
                   Falar com Especialista
                 </Button>
               </div>
@@ -294,9 +302,6 @@ const Index = () => {
             <div className="glass rounded-xl md:rounded-2xl p-6 md:p-8 text-center">
               <p className="text-xs md:text-sm text-muted-foreground">
                 © {new Date().getFullYear()} Sistema de Agendamento. Todos os direitos reservados.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 md:mt-2">
-                Desenvolvido com ❤️ para modernizar seu negócio
               </p>
             </div>
           </div>
