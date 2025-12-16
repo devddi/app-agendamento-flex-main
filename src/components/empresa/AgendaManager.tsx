@@ -11,6 +11,7 @@ import { Calendar as CalendarIcon, Clock, User, Loader2, X, RotateCcw, CheckCirc
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import FinalizarAtendimentoModal from "./FinalizarAtendimentoModal";
+import CancelarAgendamentoModal from "./CancelarAgendamentoModal";
 
 interface Agendamento {
   id: string;
@@ -51,6 +52,9 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
   const [agendamentoParaFinalizar, setAgendamentoParaFinalizar] = useState<Agendamento | null>(null);
+  const [modalCancelarAberto, setModalCancelarAberto] = useState(false);
+  const [agendamentoParaCancelar, setAgendamentoParaCancelar] = useState<Agendamento | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     fetchAgendamentos();
@@ -125,17 +129,23 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
     });
   };
 
-  const handleCancelar = async (id: string) => {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+  const handleCancelar = (agendamento: Agendamento) => {
+    setAgendamentoParaCancelar(agendamento);
+    setModalCancelarAberto(true);
+  };
 
+  const confirmarCancelamento = async () => {
+    if (!agendamentoParaCancelar) return;
+    setCancelLoading(true);
     try {
       const { error } = await supabase
         .from('agendamentos')
         .update({ status: 'cancelado' })
-        .eq('id', id);
-
+        .eq('id', agendamentoParaCancelar.id);
       if (error) throw error;
       toast({ title: "Agendamento cancelado!" });
+      setModalCancelarAberto(false);
+      setAgendamentoParaCancelar(null);
       fetchAgendamentos();
     } catch (error: any) {
       toast({
@@ -143,6 +153,8 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -387,6 +399,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
                     <Button
+                      type="button"
                       variant="default"
                       size="sm"
                       onClick={() => handleFinalizar(agendamento)}
@@ -396,9 +409,10 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                       Finalizar Atendimento
                     </Button>
                     <Button
+                      type="button"
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleCancelar(agendamento.id)}
+                      onClick={() => handleCancelar(agendamento)}
                       className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm col-span-2 md:col-span-1"
                     >
                       <X className="w-3 h-3 md:w-4 md:h-4 mr-2" />
@@ -418,6 +432,16 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
         agendamento={agendamentoParaFinalizar}
         empresaId={empresaId}
         onSuccess={handleSucessoFinalizacao}
+      />
+      <CancelarAgendamentoModal
+        isOpen={modalCancelarAberto}
+        onClose={() => {
+          setModalCancelarAberto(false);
+          setAgendamentoParaCancelar(null);
+        }}
+        agendamento={agendamentoParaCancelar}
+        onConfirm={confirmarCancelamento}
+        loading={cancelLoading}
       />
     </div>
   );

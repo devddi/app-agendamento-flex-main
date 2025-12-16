@@ -169,33 +169,39 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
       
       if (responseHorarios.error) throw responseHorarios.error;
       
-      // Buscar agendamentos já marcados (pendentes) para esta data
       const { data: agendamentos, error: agendamentosError } = await supabase
         .from('agendamentos')
-        .select('hora')
+        .select(`
+          hora,
+          servicos!inner(duracao_minutos),
+          status
+        `)
         .eq('empresa_id', empresa.id)
         .eq('data', dataFormatada)
-        .in('status', ['pendente']);
+        .neq('status', 'cancelado');
       
       if (agendamentosError) throw agendamentosError;
       
-      // Converter horários ocupados para formato HH:MM
-      const horariosOcupados = agendamentos?.map(a => {
-        if (typeof a.hora === 'string') {
-          // Se já é string, garantir formato HH:MM
-          return a.hora.slice(0, 5);
-        }
-        return a.hora;
-      }) || [];
+      const toMin = (t: string) => {
+        const s = t.slice(0, 5);
+        const [hh, mm] = s.split(':').map(Number);
+        return hh * 60 + mm;
+      };
 
       const horariosFormatados = (responseHorarios.data as any[])?.map((h: any) => 
         typeof h.horario === 'string' ? h.horario.slice(0, 5) : h.horario
       ) || [];
       
-      // Filtrar horários que não estão ocupados
-      const horariosLivres = horariosFormatados.filter(horario => 
-        !horariosOcupados.includes(horario)
-      );
+      const intervalosOcupados = (agendamentos || []).map((a: any) => {
+        const inicio = toMin(typeof a.hora === 'string' ? a.hora : String(a.hora));
+        const dur = Number(a.servicos?.duracao_minutos || 0);
+        return { inicio, fim: inicio + dur };
+      });
+
+      const horariosLivres = horariosFormatados.filter((h) => {
+        const m = toMin(h);
+        return !intervalosOcupados.some(({ inicio, fim }) => m >= inicio && m <= fim);
+      });
       
       setHorariosDisponiveis(horariosLivres);
     } catch (error: any) {
@@ -283,6 +289,41 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
         nomeCliente = formData.nome;
       }
 
+      const dataFormatada = getBRDateString(selectedDate);
+      const { data: agendamentosDia, error: errAgDia } = await supabase
+        .from('agendamentos')
+        .select(`
+          hora,
+          servicos!inner(duracao_minutos),
+          status
+        `)
+        .eq('empresa_id', empresa.id)
+        .eq('data', dataFormatada)
+        .neq('status', 'cancelado');
+      if (errAgDia) throw errAgDia;
+      const toMin = (t: string) => {
+        const s = t.slice(0, 5);
+        const [hh, mm] = s.split(':').map(Number);
+        return hh * 60 + mm;
+      };
+      const inicioNovo = toMin(selectedTime);
+      const fimNovo = inicioNovo + Number(servico.duracao_minutos || 0);
+      const conflito = (agendamentosDia || []).some((a: any) => {
+        const inicio = toMin(typeof a.hora === 'string' ? a.hora : String(a.hora));
+        const dur = Number(a.servicos?.duracao_minutos || 0);
+        const fim = inicio + dur;
+        return inicioNovo <= fim && inicio <= fimNovo;
+      });
+      if (conflito) {
+        toast({
+          title: "Conflito de horário",
+          description: "O período selecionado está ocupado.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Criar agendamento
       const { error: agendamentoError } = await supabase
         .from('agendamentos')
@@ -290,7 +331,7 @@ const AgendamentoDialog = ({ servico, empresa, open, onClose }: AgendamentoDialo
           empresa_id: empresa.id,
           cliente_id: clienteId,
           servico_id: servico.id,
-          data: getBRDateString(selectedDate),
+          data: dataFormatada,
           hora: selectedTime + ':00', // Garantir formato TIME (HH:MM:SS)
           status: 'pendente',
         });
