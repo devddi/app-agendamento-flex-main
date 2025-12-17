@@ -47,7 +47,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
   const [filtros, setFiltros] = useState<Filtros>({
     data: "",
     cliente: "",
-    status: ""
+    status: "pendente"
   });
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
@@ -77,8 +77,8 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
           servico:servicos(nome, duracao_minutos, preco)
         `)
         .eq('empresa_id', empresaId)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
 
       if (error) throw error;
       setAgendamentos(data as any || []);
