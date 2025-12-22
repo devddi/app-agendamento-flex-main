@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import FinalizarAtendimentoModal from "./FinalizarAtendimentoModal";
 import CancelarAgendamentoModal from "./CancelarAgendamentoModal";
+import EditarAgendamentoModal from "./EditarAgendamentoModal";
 
 interface Agendamento {
   id: string;
@@ -55,6 +56,8 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
   const [modalCancelarAberto, setModalCancelarAberto] = useState(false);
   const [agendamentoParaCancelar, setAgendamentoParaCancelar] = useState<Agendamento | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [agendamentoParaEditar, setAgendamentoParaEditar] = useState<Agendamento | null>(null);
 
   useEffect(() => {
     fetchAgendamentos();
@@ -196,6 +199,11 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
   const handleFinalizar = (agendamento: Agendamento) => {
     setAgendamentoParaFinalizar(agendamento);
     setModalFinalizarAberto(true);
+  };
+
+  const handleEditar = (agendamento: Agendamento) => {
+    setAgendamentoParaEditar(agendamento);
+    setModalEditarAberto(true);
   };
 
   const handleFecharModal = () => {
@@ -342,7 +350,11 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
           </Card>
         ) : (
           agendamentosFiltrados.map((agendamento) => (
-            <Card key={agendamento.id} className="glass border-primary/20 hover:border-primary/50 smooth-transition">
+            <Card 
+              key={agendamento.id} 
+              className="glass border-primary/20 hover:border-primary/50 smooth-transition cursor-pointer"
+              onClick={() => handleEditar(agendamento)}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -380,7 +392,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleReverterCancelamento(agendamento.id)}
+                    onClick={(e) => { e.stopPropagation(); handleReverterCancelamento(agendamento.id); }}
                     className="w-full h-8 text-xs md:h-9 md:text-sm"
                   >
                     <RotateCcw className="w-3 h-3 md:w-4 md:h-4 mr-2" />
@@ -402,7 +414,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                       type="button"
                       variant="default"
                       size="sm"
-                      onClick={() => handleFinalizar(agendamento)}
+                      onClick={(e) => { e.stopPropagation(); handleFinalizar(agendamento); }}
                       className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm col-span-2 md:col-span-1"
                     >
                       <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 mr-2" />
@@ -412,7 +424,7 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
                       type="button"
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleCancelar(agendamento)}
+                      onClick={(e) => { e.stopPropagation(); handleCancelar(agendamento); }}
                       className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm col-span-2 md:col-span-1"
                     >
                       <X className="w-3 h-3 md:w-4 md:h-4 mr-2" />
@@ -442,6 +454,16 @@ const AgendaManager = ({ empresaId }: AgendaManagerProps) => {
         agendamento={agendamentoParaCancelar}
         onConfirm={confirmarCancelamento}
         loading={cancelLoading}
+      />
+      <EditarAgendamentoModal
+        isOpen={modalEditarAberto}
+        onClose={() => {
+          setModalEditarAberto(false);
+          setAgendamentoParaEditar(null);
+        }}
+        agendamento={agendamentoParaEditar}
+        empresaId={empresaId}
+        onSuccess={fetchAgendamentos}
       />
     </div>
   );
